@@ -10,7 +10,7 @@ library(tidyverse)
 ```
 
 # Problem 1
-```{r}
+```{r, warning=FALSE}
 subway_df = 
   read_csv(
     
@@ -101,8 +101,7 @@ subway_tidy_df |>
 
 Of the stations that serve the A train 17 are ADA compliant.
 
-#Problem 2
-
+# Problem 2
 ```{r}
 mr_trash_df =
   readxl::read_excel(
@@ -183,7 +182,144 @@ professor_weight
 gwynnda_cigarettes
 ```
 
-The combined Trash Wheel dataset has `r nrow(trash_wheel_df)` observations from Mr. Trash Wheel, Professor Trash Wheel, and Gwynnda. The dataset includes information like the dumpster number, month and year, weight and volume of trash collected, cigarette butts, plastic bottles, and other types of waste. I added a `trash_wheel` variable so it is easy to see which wheel each observation came from. Professor Trash Wheel collected `r professor_weight` tons of trash in total, and Gwynnda collected `r gwynnda_cigarettes` cigarette butts in June 2022.
+The combined Trash Wheel dataset has `r nrow(trash_wheel_df)` observations from Mr. Trash Wheel, Professor Trash Wheel, and Gwynnda. The dataset includes information like the dumpster number, month and year, weight and volume of trash collected, cigarette butts, plastic bottles, and other types of waste. I added a `trash_wheel` variable so it is easy to see which wheel each observation came from. Professor Trash Wheel collected `r professor_weight` tons of trash in total, and Gwynnda collected `r format(gwynnda_cigarettes, big.mark = ",", scientific = FALSE)` cigarette butts in June 2022.
 
 
+# Problem 3
+```{r}
+mci_baseline_df =
+  read_csv(
+    "./data/MCI_baseline.csv",
+    skip = 1,
+    na = "."
+  ) |>
+  janitor::clean_names()
+```
 
+```{r}
+mci_baseline_df =
+  mci_baseline_df |>
+  mutate(
+    sex =
+      case_match(
+        sex,
+        1 ~ "male",
+        0 ~ "female"
+      ),
+    sex = as.factor(sex),
+    apoe4 =
+      case_match(
+        apoe4,
+        1 ~ "carrier",
+        0 ~ "non-carrier"
+      ),
+    apoe4 = as.factor(apoe4)
+  ) |>
+  filter(
+    is.na(age_at_onset) | age_at_onset > current_age
+  )
+```
+
+```{r}
+number_recruited =
+  nrow(mci_baseline_df)
+
+number_developed_mci =
+  mci_baseline_df |>
+  drop_na(age_at_onset) |>
+  nrow()
+
+average_baseline_age =
+  mci_baseline_df |>
+  pull(current_age) |>
+  mean()
+
+women_apoe4 =
+  mci_baseline_df |>
+  filter(sex == "female") |>
+  mutate(apoe4_carrier = apoe4 == "carrier") |>
+  pull(apoe4_carrier) |>
+  mean()
+```
+
+```{r}
+number_recruited
+number_developed_mci
+average_baseline_age
+women_apoe4
+```
+
+The baseline dataset originally had 483 participants and included information on age, sex, education, APOE4 status, and age at MCI onset. I changed sex and APOE4 status into categorical variables and removed participants who already had MCI at baseline. After cleaning, `r number_recruited` participants were left and `r number_developed_mci` of them developed MCI during follow-up. The average baseline age was `r round(average_baseline_age, 2)` years and `r round(women_apoe4 * 100, 1)`% of the women were APOE4 carriers.
+
+```{r}
+mci_amyloid_df =
+  read_csv(
+    "./data/mci_amyloid.csv",
+    skip = 1,
+    na = c(".", "NA", "", "Na")
+  ) |>
+  janitor::clean_names() |>
+  rename(id = study_id) |>
+  pivot_longer(
+    baseline:time_8,
+    names_to = "visit",
+    values_to = "amyloid"
+  )
+```
+
+The amyloid dataset includes measurements from baseline and several follow-up visits. I skipped the first descriptive row, cleaned the variable names, handled the missing values, and used `pivot_longer()` to organize the repeated amyloid measurements.
+
+```{r}
+baseline_only =
+  mci_baseline_df |>
+  distinct(id) |>
+  left_join(
+    mci_amyloid_df |>
+      distinct(id) |>
+      mutate(in_amyloid = TRUE),
+    by = "id"
+  ) |>
+  filter(is.na(in_amyloid))
+
+amyloid_only =
+  mci_amyloid_df |>
+  distinct(id) |>
+  left_join(
+    mci_baseline_df |>
+      distinct(id) |>
+      mutate(in_baseline = TRUE),
+    by = "id"
+  ) |>
+  filter(is.na(in_baseline))
+```
+
+```{r}
+nrow(baseline_only)
+nrow(amyloid_only)
+```
+
+```{r}
+mci_df =
+  inner_join(
+    mci_baseline_df,
+    mci_amyloid_df,
+    by = "id"
+  )
+```
+
+```{r}
+mci_df |>
+  distinct(id) |>
+  nrow()
+
+nrow(mci_df)
+```
+
+There are 8 participants who appear only in the baseline dataset and 16 who appear only in the amyloid dataset. After combining the datasets and keeping only participants who appear in both, the final dataset has 471 participants and 2355 observations. The combined dataset includes the baseline demographic information with each participant's visit and amyloid measurement.
+
+```{r}
+write_csv(
+  mci_df,
+  "./data/mci_clean.csv"
+)
+```
