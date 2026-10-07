@@ -100,3 +100,62 @@ subway_tidy_df |>
 ```
 
 Of the stations that serve the A train 17 are ADA compliant.
+
+#Problem 2
+
+```{r}
+mr_trash_df =
+  readxl::read_excel(
+    "./data/202610 Trash Wheel Collection Data.xlsx",
+    sheet = "Mr. Trash Wheel",
+    range = "A2:N742"
+  ) |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.factor(year),
+    sports_balls = as.integer(round(sports_balls)),
+    trash_wheel = "Mr. Trash Wheel"
+  )
+```
+
+```{r}
+professor_trash_df =
+  readxl::read_excel(
+    "./data/202610 Trash Wheel Collection Data.xlsx",
+    sheet = "Professor Trash Wheel",
+    range = "A2:M139",
+    na = c("", "dive")
+  ) |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.factor(year),
+    trash_wheel = "Professor Trash Wheel"
+  )
+```
+
+```{r}
+gwynnda_df =
+  readxl::read_excel(
+    "./data/202610 Trash Wheel Collection Data.xlsx",
+    sheet = "Gwynnda the Good Wheel of the W",
+    range = "A2:L394"
+  ) |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.factor(year),
+    trash_wheel = "Gwynnda"
+  )
+```
+
+```{r}
+trash_wheel_df =
+  bind_rows(
+    mr_trash_df,
+    professor_trash_df,
+    gwynnda_df
+  )
+```
+
