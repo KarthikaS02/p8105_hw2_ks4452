@@ -249,7 +249,7 @@ average_baseline_age
 women_apoe4
 ```
 
-The baseline dataset originally had 483 participants and included information on age, sex, education, APOE4 status, and age at MCI onset. I changed sex and APOE4 status into categorical variables and removed participants who already had MCI at baseline. After cleaning, `r number_recruited` participants were left and `r number_developed_mci` of them developed MCI during follow-up. The average baseline age was `r round(average_baseline_age, 2)` years and `r round(women_apoe4 * 100, 1)`% of the women were APOE4 carriers.
+The baseline dataset originally had 483 participants and included information on age, sex, education, APOE4 status, and age at MCI onset. I skipped the first descriptive row and treated "." as a missing value when importing the data. I changed sex and APOE4 status into categorical variables and removed participants who already had MCI at baseline. After cleaning, `r number_recruited` participants were left and `r number_developed_mci` of them developed MCI during follow-up. The average baseline age was `r round(average_baseline_age, 2)` years and `r round(women_apoe4 * 100, 1)`% of the women were APOE4 carriers.
 
 ```{r}
 mci_amyloid_df =
