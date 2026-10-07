@@ -2,29 +2,101 @@
 title: "Homework 2"
 author: "Karthika Shankar"
 date: "2026-10-07"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+# Problem 1
+```{r}
+subway_df = 
+  read_csv(
+    
+  "./data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+    col_types = cols(
+      Route8 = col_character(),
+      Route9 = col_character(),
+      Route10 = col_character(),
+      Route11 = col_character()
+    )
+  ) |>
+  janitor::clean_names() |>
+  select(
+    line,
+    station_name,
+    station_latitude,
+    station_longitude,
+    route1:route11,
+    entry,
+    vending,
+    entrance_type,
+    ada
+  ) |>
+  mutate(
+    entry = case_match(
+      entry,
+      "YES" ~ TRUE,
+      "NO" ~ FALSE
+    )
+  )
 ```
 
-## Including Plots
+The subway dataset includes information about subway stations and their entrances and exits like the station name, line, location, routes served, entrance type, vending availability, and ADA accessibility. I cleaned the variable names, kept only the variables needed for this problem, and changed the `entry` variable from "YES" and "NO" to a logical variable. The cleaned dataset has `r nrow(subway_df)` rows and `r ncol(subway_df)` columns. The data are not tidy because the routes are spread across many different columns (`route1` through `route11`) instead of being stored in one route variable.
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+subway_df |>
+  distinct(line, station_name) |>
+  nrow()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+There are 465 distinct subway stations in the dataset.
+
+```{r}
+subway_df |>
+  filter(ada == TRUE) |>
+  distinct(line, station_name) |>
+  nrow()
+```
+
+There are 84 ADA-compliant subway stations in the dataset.
+
+```{r}
+subway_df |>
+  filter(vending == "NO") |>
+  pull(entry) |>
+  mean()
+```
+
+Among station entrances and exits without vending about 37.7% allow entrance.
+
+```{r}
+subway_tidy_df =
+  subway_df |>
+  pivot_longer(
+    route1:route11,
+    names_to = "route_number",
+    names_prefix = "route",
+    values_to = "route_name"
+  ) |>
+  drop_na(route_name)
+```
+
+```{r}
+subway_tidy_df |>
+  filter(route_name == "A") |>
+  distinct(line, station_name) |>
+  nrow()
+```
+
+There are 60 distinct subway stations that serve the A train.
+
+```{r}
+subway_tidy_df |>
+  filter(route_name == "A" & ada == TRUE) |>
+  distinct(line, station_name) |>
+  nrow()
+```
+
+Of the stations that serve the A train 17 are ADA compliant.
